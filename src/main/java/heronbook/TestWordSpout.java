@@ -32,8 +32,8 @@ import org.pmw.tinylog.writers.*;
 public class TestWordSpout extends BaseRichSpout
   implements IStatefulComponent<String, Integer> { 
 
-    private Map<String, Integer> posMap; 
-    private State<String, Integer> posState; 
+    private Map<String, Integer> myMap; 
+    private State<String, Integer> myState; 
 
     boolean isDistributed;
     SpoutOutputCollector collector;
@@ -66,15 +66,11 @@ public class TestWordSpout extends BaseRichSpout
       setLoggging(context);
       Logger.trace("streams: {}", context.getThisStreams());
 
-      posMap = new HashMap<String, Integer>();
-      for (Map.Entry<String, Integer> entry: posState.entrySet()) {
-        if (entry.getKey() instanceof String &&
-            entry.getValue() instanceof Integer) {
-          posMap.put((String)entry.getKey(),
-                     (Integer)entry.getValue()); 
-        }
+      myMap = new HashMap<String, Integer>();
+      for (String key: myState.keySet()) {
+          myMap.put(key, myState.get(key)); 
       }
-      Logger.trace("position map {}", posMap);
+      Logger.trace("position map {}", myMap);
     }
 
     @Override
@@ -87,25 +83,25 @@ public class TestWordSpout extends BaseRichSpout
       Utils.sleep(1000);
       final String[] words = new String[] {
         "nathan", "mike", "jackson", "golda", "bertels"};
-      int offset = posMap.getOrDefault("current", 0);
+      int offset = myMap.getOrDefault("current", 0);
       final String word = words[offset];
-      posMap.put("current", ++offset % words.length); 
+      myMap.put("current", ++offset % words.length); 
       collector.emit(new Values(word));
-      Logger.trace("position map {}", posMap);
+      Logger.trace("position map {}", myMap);
     }
 
     @Override
     public void initState(State<String, Integer> state) { 
-      this.posState = state; 
-      Logger.trace("position state {}", posState);
+      this.myState = state; 
+      Logger.trace("position state {}", myState);
     }
     
     @Override
     public void preSave(String checkpointId) { 
-      for (Map.Entry<String, Integer> entry : posMap.entrySet()) {
-        posState.put(entry.getKey(), entry.getValue()); 
+      for (String key : myMap.keySet()) {
+        myState.put(key, myMap.get(key)); 
       }
-      Logger.trace("position state {}", posState);
+      Logger.trace("position state {}", myState);
     }
   
     @Override
